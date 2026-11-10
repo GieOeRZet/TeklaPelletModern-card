@@ -132,6 +132,35 @@ const CSS = `
 const SCH = [['CWU', 'sch_cwu_txt', 0], ['CO', 'sch_co_txt', 1], ['Kocioł', 'sch_boil_txt', 2]];
 const DAYS = ['Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota', 'Niedziela'];
 const SCREENS = [['pulpit', 'Pulpit'], ['instalacja', 'Instalacja'], ['nastawy', 'Nastawy'], ['parametry', 'Parametry'], ['harmonogram', 'Harmonogram'], ['alarmy', 'Alarmy']];
+// mapa punkt -> id encji grupy (patrz AttrGroup w firmware/engine.cpp) - jedna, wspolna lista dla wszystkich
+// skonsolidowanych grup nastaw serwisowych (encja osobna nie istnieje juz w HA, wartosc jest jej atrybutem)
+const GROUP_OF = {
+  p_prefeed: 'palnik_nastawy_p1', p_feed_max: 'palnik_nastawy_p1', p_photo: 'palnik_nastawy_p1', p_blow_ign: 'palnik_nastawy_p1',
+  p_blow_glow: 'palnik_nastawy_p1', p_blow_stop: 'palnik_nastawy_p1', p_glow_time: 'palnik_nastawy_p1', p_glow_fuel: 'palnik_nastawy_p1',
+  p_stop_time: 'palnik_nastawy_p1', p_lambda: 'palnik_nastawy_p1', p_o2_30: 'palnik_nastawy_p1', p_o2_100: 'palnik_nastawy_p1',
+  p_cleans: 'palnik_nastawy_p1', p_clean_gap: 'palnik_nastawy_p1', p_pause_time: 'palnik_nastawy_p1', p_pause_power: 'palnik_nastawy_p1',
+  p_pause_blow: 'palnik_nastawy_p1',
+  p_inertia: 'palnik_nastawy_p2', p_grate_time: 'palnik_nastawy_p2', p_burner_feed: 'palnik_nastawy_p2', p_feeder_period: 'palnik_nastawy_p2',
+  p_min_rpm: 'palnik_nastawy_p2',
+  co1_calib: 'co1_krzywa_p0', co1_curve_0: 'co1_krzywa_p0', co1_curve_10: 'co1_krzywa_p0', co1_curve_m20: 'co1_krzywa_p0',
+  co1_hyst: 'co1_krzywa_p0', co1_mode: 'co1_krzywa_p0',
+  co1_co_sensor: 'co1_krzywa_p1', co1_const_pump: 'co1_krzywa_p1', co1_corr: 'co1_krzywa_p1', co1_lower: 'co1_krzywa_p1',
+  co1_mixer_time: 'co1_krzywa_p1', co1_out_comf: 'co1_krzywa_p1', co1_out_eco: 'co1_krzywa_p1', co1_pump_min: 'co1_krzywa_p1',
+  co1_ret_protect: 'co1_krzywa_p1', co1_room_sensor: 'co1_krzywa_p1', co1_source: 'co1_krzywa_p1', co1_src_inc: 'co1_krzywa_p1',
+  co1_tmax: 'co1_krzywa_p1',
+  air_corr: 'kociol_konf_p0', power_min: 'kociol_konf_p0', power_max: 'kociol_konf_p0', fuel_heat: 'kociol_konf_p0',
+  fuel_test: 'kociol_konf_p0', boiler_hyst_on: 'kociol_konf_p0', boiler_hyst_off: 'kociol_konf_p0',
+  boiler_mixer_time: 'kociol_konf_p1', boiler_pump_min: 'kociol_konf_p1', boiler_ret_min: 'kociol_konf_p1',
+  boil_fuel_reserve: 'kociol_konf_p1', boil_pump_run: 'kociol_konf_p1', k_predose_g: 'kociol_konf_p1',
+  k_egt_min: 'kociol_konf_p1', k_egt_max: 'kociol_konf_p1', k_exch_int: 'kociol_konf_p1',
+  k_nominal: 'kociol_konf_p2',
+  fan_mod_1: 'palnik_krzywe_p1', fan_mod_2: 'palnik_krzywe_p1', fan_mod_3: 'palnik_krzywe_p1', fan_mod_4: 'palnik_krzywe_p1',
+  fan_mod_5: 'palnik_krzywe_p1', exh_c1: 'palnik_krzywe_p1', exh_c2: 'palnik_krzywe_p1', exh_c3: 'palnik_krzywe_p1',
+  exh_c4: 'palnik_krzywe_p1', exh_c5: 'palnik_krzywe_p1',
+  cwu_hyst: 'cwu_konf_p0', cwu_boost: 'cwu_konf_p0', cwu_prio: 'cwu_konf_p0', cwu_legion: 'cwu_konf_p0',
+  cwu_src: 'cwu_konf_p1', cwu_src_inc: 'cwu_konf_p1', cwu_delta: 'cwu_konf_p1', cwu_tmax: 'cwu_konf_p1',
+  alarm_snd: 'alarm_konf_p1', alarm_sil_from: 'alarm_konf_p1', alarm_sil_to: 'alarm_konf_p1',
+};
 
 class TeklaModernCard extends HTMLElement {
   setConfig(c) {
@@ -161,7 +190,15 @@ class TeklaModernCard extends HTMLElement {
     const dev = (want && devs.find(d => d.id === want)) || devs[0];
     return { devs, dev, idx: dev ? buildIndex(this._hass, dev.id) : { byId: new Map(), byEntity: new Map() } };
   }
-  pv(id) { const s = this._lastIdx && this._lastIdx.byId.get(id); return s ? s.state : undefined; }
+  // Role skonsolidowane w grupy (patrz AttrGroup w firmware/engine.cpp): encja osobna nie istnieje juz w HA,
+  // wartosc jest atrybutem encji grupy - pv() czyta ja stamtad, gdy nie ma wlasnej encji o danym id.
+  pv(id) {
+    const s = this._lastIdx && this._lastIdx.byId.get(id);
+    if (s) return s.state;
+    const g = GROUP_OF[id];
+    if (g) { const gs = this._lastIdx && this._lastIdx.byId.get(g); if (gs && gs.attributes && gs.attributes[id] !== undefined) return gs.attributes[id]; }
+    return undefined;
+  }
   pn(id) { const x = parseFloat(this.pv(id)); return Number.isFinite(x) ? x : NaN; }
   pb(id) { return this.pv(id) === 'on'; }
   // Atrybut encji (np. wpisy historii alarmow ah_0..ah_19 na encji alarm_history, skonsolidowane
