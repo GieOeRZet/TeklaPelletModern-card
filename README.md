@@ -2,10 +2,9 @@
 
 Karta Lovelace dla Home Assistant w stylu aplikacji Android (pulpit z grafikami
 Tekli, schemat instalacji, nastawy, pełna lista parametrów, harmonogramy,
-alarmy) – wyłącznie dla integracji [TeklaPelletCAN](https://github.com/GieOeRZet/TeklaPelletCan)
-(urządzenie wyszukiwane w rejestrze HA po domenie integracji, punkty
-adresowane po ID z firmware przez atrybut `tpc_id`, bez zgadywania po
-nazwach encji).
+alarmy). Współpracuje z integracją TeklaPelletCAN (urządzenie wyszukiwane w
+rejestrze HA po domenie integracji, punkty adresowane po ID z modułu przez
+atrybut `tpc_id`, bez zgadywania po nazwach encji).
 
 ## Instalacja (HACS)
 
@@ -16,10 +15,9 @@ nazwach encji).
 
 ## Metadane punktów
 
-`teklapelletcan-points.js` jest generowany automatycznie z tego samego źródła
-co firmware (`rejestry/*.csv` w głównym repozytorium) – nie edytować ręcznie,
-plik jest nadpisywany przy każdej synchronizacji z repo źródłowym.
+`teklapelletcan-points.js` jest generowany automatycznie z tego samego źródła co moduł – nie edytować ręcznie, plik
+jest nadpisywany przy każdej aktualizacji.
 
 ## Licencja
 
-Jak w [TeklaPelletCan](https://github.com/GieOeRZet/TeklaPelletCan) – zobacz [LICENSE](LICENSE).
+Zobacz [LICENSE](LICENSE).
